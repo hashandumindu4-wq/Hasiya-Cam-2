@@ -11,11 +11,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Unzip project file
+    - name: Unzip project safely
       run: |
-        unzip -o *.zip
-        if [ ! -f gradlew ]; then
-          DIR=$(find . -maxdepth 3 -name gradlew -exec dirname {} \;)
+        find . -maxdepth 1 -name "*.zip" -exec unzip -o "{}" \;
+        GRADLEW_PATH=$(find . -name "gradlew" -type f | head -n 1)
+        if [ -n "$GRADLEW_PATH" ]; then
+          DIR=$(dirname "$GRADLEW_PATH")
           echo "WORK_DIR=$DIR" >> $GITHUB_ENV
         else
           echo "WORK_DIR=." >> $GITHUB_ENV
@@ -29,12 +30,12 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: |
-        cd ${{ env.WORK_DIR }}
+        cd "${{ env.WORK_DIR }}"
         chmod +x gradlew
 
     - name: Build Debug APK
       run: |
-        cd ${{ env.WORK_DIR }}
+        cd "${{ env.WORK_DIR }}"
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
