@@ -1,0 +1,45 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Unzip project file
+      run: |
+        unzip -o *.zip
+        if [ ! -f gradlew ]; then
+          DIR=$(find . -maxdepth 3 -name gradlew -exec dirname {} \;)
+          echo "WORK_DIR=$DIR" >> $GITHUB_ENV
+        else
+          echo "WORK_DIR=." >> $GITHUB_ENV
+        fi
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Grant execute permission for gradlew
+      run: |
+        cd ${{ env.WORK_DIR }}
+        chmod +x gradlew
+
+    - name: Build Debug APK
+      run: |
+        cd ${{ env.WORK_DIR }}
+        ./gradlew assembleDebug
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ClearLens-Camera-APK
+        path: |
+          **/build/outputs/apk/debug/*.apk
